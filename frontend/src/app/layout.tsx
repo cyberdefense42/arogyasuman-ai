@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { LanguageProvider } from "@/contexts/LanguageContext"
@@ -7,14 +7,16 @@ import { Header } from "@/components/layout/header"
 import { ToastProvider } from "@/components/ui/Toast"
 import PageTransition from "@/components/ui/PageTransition"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  display: "swap",
 })
 
 export const metadata = {
@@ -30,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-br from-primary-25 via-white to-healing-25 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500`}
+        className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased min-h-screen bg-gradient-to-br from-primary-25 via-white to-healing-25 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500`}
       >
         <ThemeProvider>
           <AuthProvider>

@@ -70,6 +70,7 @@ export function Header() {
               
               return (
                 <motion.div
+                  key={item.name}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -220,6 +221,6 @@ export function Header() {
           </div>
         )}
       </div>
-    </header>
+    </motion.header>
   )
 }
