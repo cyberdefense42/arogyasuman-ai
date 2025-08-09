@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  provider      String?
+  avatar        String?
+  role          String    @default("user") // "user", "admin", "doctor"
+  dateOfBirth   DateTime? @map("date_of_birth")
+  gender        String?
+  bloodGroup    String?   @map("blood_group")
+  isDependent   Boolean   @default(false) @map("is_dependent")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  reports       Report[]
+  familyMemberships FamilyMember[]
+  chatMessages  ChatMessage[]
+  healthProfile HealthProfile?
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Report {
+  id         String      @id @default(cuid())
+  userId     String      @map("user_id")
+  fileName   String      @map("file_name")
+  fileUrl    String      @map("file_url")
+  fileType   String      @map("file_type")
+  uploadDate DateTime    @default(now()) @map("upload_date")
+  status     String @default("PENDING")
+  extractedText String?   @map("extracted_text")
+  textEmbedding String?   @map("text_embedding")
+  ocrConfidence Float?    @map("ocr_confidence")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis   Analysis?
+  metrics    HealthMetric[]
+  embeddings ReportEmbedding[]
+  
+  @@index([userId])
+  @@index([status])
+  @@map("reports")
+}
+
+model Analysis {
+  id              String   @id @default(cuid())
+  reportId        String   @unique @map("report_id")
+  aiAnalysis      String   @map("ai_analysis")
+  recommendations String
+  healthScore     Float?   @map("health_score")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  report          Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@map("analyses")
+}
+
+model HealthMetric {
+  id          String   @id @default(cuid())
+  reportId    String   @map("report_id")
+  category    String
+  metric      String
+  value       String
+  unit        String
+  normalMin   Float?   @map("normal_min")
+  normalMax   Float?   @map("normal_max")
+  flag        String @default("NORMAL")
+  createdAt   DateTime @default(now())
+  
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@index([reportId])
+  @@index([metric])
+  @@map("health_metrics")
+}
+
+// Note: SQLite doesn't support enums, using String with default values
+// ReportStatus: PENDING, PROCESSING, COMPLETED, FAILED
+// MetricFlag: LOW, NORMAL, HIGH, CRITICAL
+
+// Vector database models for FAISS integration
+model ReportEmbedding {
+  id        String   @id @default(cuid())
+  reportId  String   @map("report_id")
+  chunkText String   @map("chunk_text")
+  embedding String   @map("embedding")
+  chunkIndex Int     @map("chunk_index")
+  createdAt DateTime @default(now())
+  
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@index([reportId])
+  @@map("report_embeddings")
+}
+
+model KnowledgeBase {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String   // "blood_test", "normal_ranges", "conditions", etc.
+  tags        String   @map("tags")
+  embedding   String   @map("embedding")
+  source      String?  // Source of the knowledge
+  confidence  Float?   // Confidence score
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([category])
+  @@index([tags])
+  @@map("knowledge_base")
+}
+
+model SimilarCase {
+  id            String   @id @default(cuid())
+  originalReportId String @map("original_report_id")
+  similarReportId  String @map("similar_report_id")
+  similarity      Float   // Cosine similarity score
+  createdAt       DateTime @default(now())
+  
+  @@unique([originalReportId, similarReportId])
+  @@index([originalReportId])
+  @@index([similarity])
+  @@map("similar_cases")
+}
+
+// Chat functionality models
+model ChatMessage {
+  id         String   @id @default(cuid())
+  sessionId  String   @map("session_id")
+  userId     String   @map("user_id")
+  role       String   // 'user' or 'assistant'
+  content    String
+  createdAt  DateTime @default(now())
+  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([userId])
+  @@map("chat_messages")
+}
+
+// Family management models
+model Family {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String   @map("owner_id")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  members     FamilyMember[]
+  
+  @@map("families")
+}
+
+model FamilyMember {
+  id           String   @id @default(cuid())
+  familyId     String   @map("family_id")
+  userId       String   @map("user_id")
+  role         String   // 'owner', 'admin', 'member'
+  relationship String   // 'self', 'spouse', 'child', 'parent', 'sibling', 'other'
+  addedBy      String?  @map("added_by")
+  createdAt    DateTime @default(now())
+  
+  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([familyId, userId])
+  @@index([userId])
+  @@map("family_members")
+}
+
+// Health profile for family members
+model HealthProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  allergies         String   @default("[]") // JSON array
+  chronicConditions String   @default("[]") @map("chronic_conditions") // JSON array
+  medications       String   @default("[]") // JSON array
+  emergencyContact  String?  @map("emergency_contact")
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("health_profiles")
+}
