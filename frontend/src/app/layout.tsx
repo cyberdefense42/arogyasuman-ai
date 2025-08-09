@@ -1,51 +1,51 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import "./globals.css";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { LanguageProvider } from "@/contexts/LanguageContext";
-import { AuthProvider } from "@/contexts/AuthContext";
-import "@/lib/clearStorage"; // Make clearStorage function available globally
+import { Geist, Geist_Mono } from "next/font/google"
+import "./globals.css"
+import { AuthProvider } from "@/contexts/AuthContext"
+import { LanguageProvider } from "@/contexts/LanguageContext"
+import { ThemeProvider } from "@/contexts/ThemeContext"
+import { Header } from "@/components/layout/header"
+import { ToastProvider } from "@/components/ui/Toast"
+import PageTransition from "@/components/ui/PageTransition"
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+const geistSans = Geist({
   variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+  subsets: ["latin"],
+})
 
-export const metadata: Metadata = {
-  title: "ArogyaSuman - AI-Powered Health Analysis for Indians",
-  description: "Analyze your blood reports with AI and get personalized health recommendations tailored for Indian dietary habits and lifestyle.",
-  keywords: "health analysis, blood report, AI, Indian diet, ayurveda, healthcare",
-};
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+})
+
+export const metadata = {
+  title: "ArogyaSuman AI - Indian Healthcare Assistant",
+  description: "AI-powered health analysis for Indian families with culturally aware insights",
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-br from-primary-25 via-white to-healing-25 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500`}
       >
-        <AuthProvider>
-          <LanguageProvider>
-            <div className="flex flex-col min-h-screen">
+        <ThemeProvider>
+          <AuthProvider>
+            <LanguageProvider>
               <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
-            </div>
-          </LanguageProvider>
-        </AuthProvider>
+              <PageTransition>
+                <main className="min-h-screen">
+                  {children}
+                </main>
+              </PageTransition>
+              <ToastProvider />
+            </LanguageProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }

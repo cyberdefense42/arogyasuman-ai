@@ -2,12 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Heart, Menu, X, User } from "lucide-react"
+import { Heart, Menu, X, User, Moon, Sun } from "lucide-react"
 import { useState } from "react"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { LanguageSelector } from "@/components/ui/language-selector"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useAuth } from "@/contexts/AuthContext"
+import { useTheme } from "@/contexts/ThemeContext"
 import { useRouter } from "next/navigation"
 
 export function Header() {
@@ -15,6 +17,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { t } = useLanguage()
   const { user, logout } = useAuth()
+  const { isDarkMode, toggleDarkMode } = useTheme()
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -32,16 +35,32 @@ export function Header() {
   ]
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <motion.header 
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-50"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-primary-500 to-healing-500 p-2 rounded-lg">
-              <Heart className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">{t("common.appName")}</span>
-          </Link>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link href="/" className="flex items-center space-x-2">
+              <motion.div 
+                className="bg-gradient-to-r from-primary-500 to-healing-500 p-2 rounded-lg shadow-lg"
+                whileHover={{ rotate: 180 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Heart className="h-6 w-6 text-white" />
+              </motion.div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-healing-600 bg-clip-text text-transparent">
+                {t("common.appName")}
+              </span>
+            </Link>
+          </motion.div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
@@ -50,21 +69,26 @@ export function Header() {
               const href = requiresAuth && !user ? `/login?redirect=${item.href}` : item.href;
               
               return (
-                <Link
-                  key={item.name}
-                  href={href}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    pathname === item.href
-                      ? "text-primary-600 bg-primary-50"
-                      : "text-gray-700 hover:text-primary-600 hover:bg-primary-50"
-                  } ${requiresAuth && !user ? "opacity-75" : ""}`}
-                  title={requiresAuth && !user ? "Login required" : ""}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {item.name}
-                  {requiresAuth && !user && (
-                    <span className="ml-1 text-xs">🔒</span>
-                  )}
-                </Link>
+                  <Link
+                    key={item.name}
+                    href={href}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      pathname === item.href
+                        ? "text-primary-600 bg-primary-50 dark:bg-primary-900/20 dark:text-primary-400"
+                        : "text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                    } ${requiresAuth && !user ? "opacity-75" : ""}`}
+                    title={requiresAuth && !user ? "Login required" : ""}
+                  >
+                    {item.name}
+                    {requiresAuth && !user && (
+                      <span className="ml-1 text-xs">🔒</span>
+                    )}
+                  </Link>
+                </motion.div>
               )
             })}
           </nav>
@@ -72,6 +96,26 @@ export function Header() {
           {/* CTA Button */}
           <div className="hidden md:flex items-center space-x-4">
             <LanguageSelector />
+            
+            {/* Dark Mode Toggle */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              <motion.div
+                initial={false}
+                animate={{ rotate: isDarkMode ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {isDarkMode ? (
+                  <Sun className="h-5 w-5 text-sacred-500" />
+                ) : (
+                  <Moon className="h-5 w-5 text-primary-600" />
+                )}
+              </motion.div>
+            </motion.button>
             {user ? (
               <>
                 {user.role === 'admin' && (

@@ -1,9 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Calendar, TrendingUp, TrendingDown, Activity, Heart, FileText, AlertTriangle, CheckCircle, Table } from "lucide-react"
+import { Calendar, TrendingUp, TrendingDown, Activity, Heart, FileText, AlertTriangle, CheckCircle, Table, BarChart3, Users } from "lucide-react"
+import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import MetricCard from "@/components/ui/MetricCard"
+import TrendChart from "@/components/charts/TrendChart"
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton"
+import { AnimatedSection, StaggerContainer, StaggerItem } from "@/components/ui/PageTransition"
+import { showToast } from "@/components/ui/Toast"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { reportStorage, type ScanReport, type HealthMetric } from "@/lib/reportStorage"
 import { useAuth } from "@/contexts/AuthContext"
@@ -31,12 +37,64 @@ export default function DashboardPage() {
     // Load reports from localStorage only
     const storedReports = reportStorage.getReports()
     setReports(storedReports)
+    
+    // Show welcome toast for first-time users
+    if (storedReports.length === 0) {
+      showToast.info(
+        "Welcome to ArogyaSuman!",
+        "Upload your first blood report to get started with AI-powered health insights."
+      )
+    }
   }, [user, loading, router])
+  
+  // Generate trend data from reports
+  const getTrendData = (metricName: string) => {
+    return reports
+      .slice(0, 6) // Last 6 reports
+      .reverse()
+      .map((report, index) => {
+        const metric = report.metrics.find(m => m.name.includes(metricName))
+        return {
+          date: new Date(report.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          value: metric ? parseFloat(metric.value.toString()) : 0,
+          label: report.fileName
+        }
+      })
+      .filter(item => item.value > 0)
+  }
+  
+  // Calculate metric trends
+  const getMetricTrend = (metricName: string) => {
+    const data = getTrendData(metricName)
+    if (data.length < 2) return { trend: 'stable', value: 0 }
+    
+    const latest = data[data.length - 1].value
+    const previous = data[data.length - 2].value
+    const change = ((latest - previous) / previous) * 100
+    
+    return {
+      trend: change > 5 ? 'up' : change < -5 ? 'down' : 'stable',
+      value: Math.abs(Math.round(change))
+    }
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-primary-25 via-white to-healing-25 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+        <div className="bg-gradient-to-r from-primary-600 to-healing-600 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Skeleton width="300px" height="48px" className="bg-white/20" />
+            <Skeleton width="200px" height="24px" className="bg-white/10 mt-4" />
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+          <SkeletonCard className="h-96" />
+        </div>
       </div>
     )
   }
